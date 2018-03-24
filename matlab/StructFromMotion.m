@@ -4,10 +4,13 @@
 % directory.
 imageDir = '../bowl/';
 imds = imageDatastore(imageDir);
+scale = [8 8 1];
+inputSize = size(I)./scale;
+imds.ReadFcn = @(buildingScene)imresize(imread(buildingScene), inputSize(1:2));
 
 % Display the images.
 figure
-montage(imds.Files, 'Size', [3, 2]);
+montage(imds.Files, 'Size', [4, 5]);
 
 % Convert the images to grayscale.
 images = cell(1, numel(imds.Files));
@@ -61,8 +64,8 @@ for i = 2:numel(images)
     % The pose is computed up to scale, meaning that the distance between
     % the cameras in the previous view and the current view is set to 1.
     % This will be corrected by the bundle adjustment.
-    [relativeOrient, relativeLoc, inlierIdx] = helperEstimateRelativePose(...
-        matchedPoints1, matchedPoints2, cameraParams);
+    
+    [relativeOrient, relativeLoc, inlierIdx] = helperEstimateRelativePose(matchedPoints1, matchedPoints2, cameraParams);
 
     % Add the current view to the view set.
     vSet = addView(vSet, i, 'Points', currPoints);
