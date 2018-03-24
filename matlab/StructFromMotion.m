@@ -1,14 +1,15 @@
-
-
 % Use |imageDatastore| to get a list of all image file names in a
 % directory.
-imageDir = '../bowl/';
+calibDir = '../';
+imageDir = '../thermo2/';
 imds = imageDatastore(imageDir);
-scale = [8 8 1];
+scale = [5 5 1];
 I = readimage(imds, 1);
 inputSize = size(I)
 inputSize = size(I)./scale
 imds.ReadFcn = @(buildingScene)imresize(imread(buildingScene), inputSize(1:2));
+numPoints = 10000;
+tiles = [10 10];
 
 % Display the images.
 figure
@@ -23,7 +24,7 @@ for i = 1:numel(imds.Files)
 end
 
 title('Input Image Sequence');
-load(fullfile(imageDir, 'cameraParams.mat'));
+load(fullfile(calibDir, 'cameraParams.mat'));
 % Undistort the first image.
 I = undistortImage(images{1}, cameraParams);
 
@@ -32,7 +33,10 @@ I = undistortImage(images{1}, cameraParams);
 % features around the edges of the image.
 border = 50;
 roi = [border, border, size(I, 2)- 2*border, size(I, 1)- 2*border];
-prevPoints   = detectSURFFeatures(I, 'NumOctaves', 8, 'ROI', roi);
+
+%prevPoints   = detectSURFFeatures(I, 'NumOctaves', 8, 'ROI', roi);
+[yp, xp, ~] = harris(I, numPoints, 'tile', tiles, 'disp');
+prevPoints = cornerPoints([xp yp]);
 
 % Extract features. Using 'Upright' features improves matching, as long as
 % the camera motion involves little or no in-plane rotation.
@@ -54,8 +58,15 @@ for i = 2:numel(images)
     I = undistortImage(images{i}, cameraParams);
 
     % Detect, extract and match features.
-    currPoints   = detectHarrisFeatures(I, 'NumOctaves', 8, 'ROI', roi);
+    % currPoints   = detectSURFFeatures(I, 'NumOctaves', 8, 'ROI', roi);
+        
+    % Initialize features for I(1)
+    %points = detectSURFFeatures(grayImage);
+    [yp, xp, ~] = harris(I, numPoints, 'tile', tiles, 'disp');
+    currPoints = cornerPoints([xp yp]);
+
     currFeatures = extractFeatures(I, currPoints, 'Upright', true);
+    
     indexPairs = matchFeatures(prevFeatures, currFeatures, ...
         'MaxRatio', .7, 'Unique',  true);
 
@@ -68,14 +79,15 @@ for i = 2:numel(images)
     imshow(I, 'InitialMagnification', 50);                                    
     title('150 Strongest Corners from the Pano Image');                           
     hold on                                                                                                                                                    
-    plot(selectStrongest(matchedPoints1, 1500));                                     
+    %plot(selectStrongest(matchedPoints1, 1500));                                     
+    plot(matchedPoints1);                                     
     
     figure                                                                        
     imshow(images{i-1}, 'InitialMagnification', 50);                                    
     title('150 Strongest Corners from the First Image');                          
     hold on                                                                       
-    plot(selectStrongest(matchedPoints1, 1500));     
-    
+    %plot(selectStrongest(matchedPoints1, 1500));     
+    plot(matchedPoints2);                                     
 
     % Estimate the camera pose of current view relative to the previous view.
     % The pose is computed up to scale, meaning that the distance between
