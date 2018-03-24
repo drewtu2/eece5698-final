@@ -62,7 +62,7 @@ for i = 2:numel(images)
     % the cameras in the previous view and the current view is set to 1.
     % This will be corrected by the bundle adjustment.
     [relativeOrient, relativeLoc, inlierIdx] = helperEstimateRelativePose(...
-        matchedPoints1, matchedPoints2, cameraParams);
+        matchedPoints1, matchedPoints2, cameraParams.mat);
 
     % Add the current view to the view set.
     vSet = addView(vSet, i, 'Points', currPoints);
