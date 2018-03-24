@@ -2,10 +2,12 @@
 
 % Use |imageDatastore| to get a list of all image file names in a
 % directory.
-imageDir = '/Users/bartelsd7369/Desktop/eece5698-final/bowl/';
+imageDir = '../bowl/';
 imds = imageDatastore(imageDir);
 scale = [8 8 1];
-inputSize = size(I)./scale;
+I = readimage(imds, 1);
+inputSize = size(I)
+inputSize = size(I)./scale
 imds.ReadFcn = @(buildingScene)imresize(imread(buildingScene), inputSize(1:2));
 
 % Display the images.
@@ -52,7 +54,7 @@ for i = 2:numel(images)
     I = undistortImage(images{i}, cameraParams);
 
     % Detect, extract and match features.
-    currPoints   = detectSURFFeatures(I, 'NumOctaves', 8, 'ROI', roi);
+    currPoints   = detectHarrisFeatures(I, 'NumOctaves', 8, 'ROI', roi);
     currFeatures = extractFeatures(I, currPoints, 'Upright', true);
     indexPairs = matchFeatures(prevFeatures, currFeatures, ...
         'MaxRatio', .7, 'Unique',  true);
@@ -60,6 +62,20 @@ for i = 2:numel(images)
     % Select matched points.
     matchedPoints1 = prevPoints(indexPairs(:, 1));
     matchedPoints2 = currPoints(indexPairs(:, 2));
+    
+    % Visualize detected points                                                    
+    figure                                                                        
+    imshow(I, 'InitialMagnification', 50);                                    
+    title('150 Strongest Corners from the Pano Image');                           
+    hold on                                                                                                                                                    
+    plot(selectStrongest(matchedPoints1, 1500));                                     
+    
+    figure                                                                        
+    imshow(images{i-1}, 'InitialMagnification', 50);                                    
+    title('150 Strongest Corners from the First Image');                          
+    hold on                                                                       
+    plot(selectStrongest(matchedPoints1, 1500));     
+    
 
     % Estimate the camera pose of current view relative to the previous view.
     % The pose is computed up to scale, meaning that the distance between
