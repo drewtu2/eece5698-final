@@ -41,7 +41,7 @@ end
 for i = 1:100
     % Estimate the essential matrix.    
     [E, inlierIdx] = estimateEssentialMatrix(matchedPoints1, matchedPoints2,...
-        cameraParams, 'Confidence', 80);
+        cameraParams);
 
     % Make sure we get enough inliers
     if sum(inlierIdx) / numel(inlierIdx) < .3

@@ -1,20 +1,20 @@
+%% Load Images into memory...
 % Use |imageDatastore| to get a list of all image file names in a
 % directory.
 calibDir = '../';
-imageDir = '../thermo2/';
+imageDir = '../../eece5698/lab4/latino_center/';
+imageDir = '../room/';
 imds = imageDatastore(imageDir);
-scale = [5 5 1];
+scale = [4 4 1];
 I = readimage(imds, 1);
-inputSize = size(I)
 inputSize = size(I)./scale
 imds.ReadFcn = @(buildingScene)imresize(imread(buildingScene), inputSize(1:2));
-numPoints = 10000;
-tiles = [10 10];
+numPoints = 1000;
+tiles = [1 8];
 
-% Display the images.
-figure
-
-montage(imds.Files, 'Size', [4, 5]);
+% Display the images we're meshing...
+% figure
+% montage(imds.Files, 'Size', [4, 5]);
 
 % Convert the images to grayscale.
 images = cell(1, numel(imds.Files));
@@ -23,8 +23,14 @@ for i = 1:numel(imds.Files)
     images{i} = rgb2gray(I);
 end
 
-title('Input Image Sequence');
+% Create an empty viewSet object to manage the data associated with each
+% view.
+vSet = viewSet;
+
 load(fullfile(calibDir, 'cameraParams.mat'));
+
+%% Calculate first set of features
+
 % Undistort the first image.
 I = undistortImage(images{1}, cameraParams);
 
@@ -35,16 +41,12 @@ border = 50;
 roi = [border, border, size(I, 2)- 2*border, size(I, 1)- 2*border];
 
 %prevPoints   = detectSURFFeatures(I, 'NumOctaves', 8, 'ROI', roi);
-[yp, xp, ~] = harris(I, numPoints, 'tile', tiles, 'disp');
+[yp, xp, ~] = harris(I, numPoints, 'tile', tiles);
 prevPoints = cornerPoints([xp yp]);
 
 % Extract features. Using 'Upright' features improves matching, as long as
 % the camera motion involves little or no in-plane rotation.
-prevFeatures = extractFeatures(I, prevPoints, 'Upright', true);
-
-% Create an empty viewSet object to manage the data associated with each
-% view.
-vSet = viewSet;
+[prevFeatures, prevPoints]= extractFeatures(I, prevPoints);
 
 % Add the first view. Place the camera associated with the first view
 % and the origin, oriented along the Z-axis.
@@ -55,39 +57,32 @@ vSet = addView(vSet, viewId, 'Points', prevPoints, 'Orientation', ...
 
 for i = 2:numel(images)
     % Undistort the current image.
-    I = undistortImage(images{i}, cameraParams);
-
+    %I = undistortImage(images{i}, cameraParams);
+    I = images{i};
+    
     % Detect, extract and match features.
     % currPoints   = detectSURFFeatures(I, 'NumOctaves', 8, 'ROI', roi);
         
     % Initialize features for I(1)
     %points = detectSURFFeatures(grayImage);
-    [yp, xp, ~] = harris(I, numPoints, 'tile', tiles, 'disp');
+    [yp, xp, ~] = harris(I, numPoints, 'tile', tiles);
     currPoints = cornerPoints([xp yp]);
 
-    currFeatures = extractFeatures(I, currPoints, 'Upright', true);
+    [currFeatures, currPoints] = extractFeatures(I, currPoints);
     
-    indexPairs = matchFeatures(prevFeatures, currFeatures, ...
-        'MaxRatio', .7, 'Unique',  true);
+%     indexPairs = matchFeatures(prevFeatures, currFeatures, ...
+%         'MaxRatio', .9, 'Unique',  true);
+    indexPairs = matchFeatures(prevFeatures, currFeatures);
+
 
     % Select matched points.
     matchedPoints1 = prevPoints(indexPairs(:, 1));
     matchedPoints2 = currPoints(indexPairs(:, 2));
     
-    % Visualize detected points                                                    
-    figure                                                                        
-    imshow(I, 'InitialMagnification', 50);                                    
-    title('150 Strongest Corners from the Pano Image');                           
-    hold on                                                                                                                                                    
-    %plot(selectStrongest(matchedPoints1, 1500));                                     
-    plot(matchedPoints1);                                     
-    
-    figure                                                                        
-    imshow(images{i-1}, 'InitialMagnification', 50);                                    
-    title('150 Strongest Corners from the First Image');                          
-    hold on                                                                       
-    %plot(selectStrongest(matchedPoints1, 1500));     
-    plot(matchedPoints2);                                     
+    figure;
+    showMatchedFeatures(images{i-1}, images{i}, matchedPoints1, matchedPoints2);
+    title('Tracked Features');
+                                    
 
     % Estimate the camera pose of current view relative to the previous view.
     % The pose is computed up to scale, meaning that the distance between
@@ -135,7 +130,7 @@ for i = 2:numel(images)
     prevPoints   = currPoints;
 end
 
-% Display camera poses.
+%% Display camera poses.
 camPoses = poses(vSet);
 figure;
 plotCamera(camPoses, 'Size', 0.2);
