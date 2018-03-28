@@ -1,3 +1,5 @@
 **.m~
 matlab/**.m~
 **.DS_Store
+**.swp
+venv
