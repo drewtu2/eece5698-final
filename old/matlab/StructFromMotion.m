@@ -3,7 +3,7 @@
 % directory.
 calibDir = '../';
 imageDir = '../../eece5698/lab4/latino_center/';
-imageDir = '../room/';
+imageDir = '../pics/room/';
 imds = imageDatastore(imageDir);
 scale = [4 4 1];
 I = readimage(imds, 1);
@@ -57,8 +57,8 @@ vSet = addView(vSet, viewId, 'Points', prevPoints, 'Orientation', ...
 
 for i = 2:numel(images)
     % Undistort the current image.
-    %I = undistortImage(images{i}, cameraParams);
-    I = images{i};
+    I = undistortImage(images{i}, cameraParams);
+    %I = images{i};
     
     % Detect, extract and match features.
     % currPoints   = detectSURFFeatures(I, 'NumOctaves', 8, 'ROI', roi);
@@ -70,9 +70,9 @@ for i = 2:numel(images)
 
     [currFeatures, currPoints] = extractFeatures(I, currPoints);
     
-%     indexPairs = matchFeatures(prevFeatures, currFeatures, ...
-%         'MaxRatio', .9, 'Unique',  true);
-    indexPairs = matchFeatures(prevFeatures, currFeatures);
+    indexPairs = matchFeatures(prevFeatures, currFeatures, ...
+        'MaxRatio', .9, 'Unique',  true);
+    %indexPairs = matchFeatures(prevFeatures, currFeatures);
 
 
     % Select matched points.
@@ -89,7 +89,8 @@ for i = 2:numel(images)
     % the cameras in the previous view and the current view is set to 1.
     % This will be corrected by the bundle adjustment.
     
-    [relativeOrient, relativeLoc, inlierIdx] = helperEstimateRelativePose(matchedPoints1, matchedPoints2, cameraParams);
+    [relativeOrient, relativeLoc, inlierIdx] = helperEstimateRelativePose(...
+    matchedPoints1, matchedPoints2, cameraParams);
 
     % Add the current view to the view set.
     vSet = addView(vSet, i, 'Points', currPoints);
