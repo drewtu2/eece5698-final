@@ -1,0 +1,8 @@
+prefix=/home/andrew/Documents/eece5698-final/catkin-ws/devel
+
+Name: turtlebot3_msgs
+Description: Description of turtlebot3_msgs
+Version: 0.1.5
+Cflags: -I/home/andrew/Documents/eece5698-final/catkin-ws/devel/include
+Libs: -L/home/andrew/Documents/eece5698-final/catkin-ws/devel/lib 
+Requires: std_msgs sensor_msgs message_runtime
