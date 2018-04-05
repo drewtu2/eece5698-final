@@ -1,0 +1,3 @@
+[submodule "raspicam_node"]
+	path = raspicam_node
+	url = https://github.com/UbiquityRobotics/raspicam_node
