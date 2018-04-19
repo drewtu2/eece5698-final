@@ -3,7 +3,7 @@ This is the final project for EECE 5698, Robotics Sensing and Navigation with
 Prof. Singh. The goal of this project was to develop a robot capable of following
 a user using various methods of person detection on the Turtlebot3 Platform. 
 
-[Presentation][slides]
+[Google Drive Presentation][slides]
 
 ## Person Detection
 We evaluated methods of person detection using both LIDAR and camera sensors.
