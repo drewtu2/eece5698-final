@@ -3,8 +3,7 @@ This is the final project for EECE 5698, Robotics Sensing and Navigation with
 Prof. Singh. The goal of this project was to develop a robot capable of following
 a user using various methods of person detection on the Turtlebot3 Platform. 
 
-## Presentation: 
-https://drive.google.com/open?id=1gFGnLI1dI_8AC7MUfZJt8i2YP8WJrGdVNFDrBbliSAA
+[Presentation][slides]
 
 ## Person Detection
 We evaluated methods of person detection using both LIDAR and camera sensors.
@@ -14,6 +13,11 @@ We implemented two forms of person detection using camera. Each method pulled
 ROS Image messages from the `/raspicam2/image_raw` topic and published the ROI 
 to follow to the `/roi` topic. If more than one ROI was found, only the ROI with 
 the largest area was published. 
+
+A diagram of the node/topic map is shown below.
+
+![Image Processing Pipeline with corresponding nodes and topics][pipeline]
+
 
 **HOG Detector**: The first method we used was OpenCVs built in pedestrian HoG
 Detector. After detection, we perform a non-maxima supression to prevent the same
@@ -58,15 +62,17 @@ timing when offline
 - Launch `turtlebot3_remote` node
 - Launch `gscam` node
 - Run whichever detector node you want (dnn or hog)
-- Run follow_bot node (reads /roi, publishes to /cmd_vel)
+- Run `follow_bot node` (reads `/roi`, publishes to `/cmd_vel`)
 
 ### TurtleBot Side
 - Ensure `$ROS_MASTER_URI` is set to the ip address of your remote machine
 - Ensure the date and time are correctly set (i.e. synchronized) with the master
 node
-- Run turtlebot3_bringup node
+- Run `turtlebot3_bringup node`
 - Stream the video from the Raspberry picam to the GStreamer Node
 
 [1]: https://github.com/opencv/opencv/wiki/Deep-Learning-in-OpenCV
+[slides]:https://drive.google.com/open?id=1gFGnLI1dI_8AC7MUfZJt8i2YP8WJrGdVNFDrBbliSAA
 [HOG]: presentation/hog.png
 [MobileNet]: presentation/dnn.png
+[pipeline]: presentation/node_diagram.png
