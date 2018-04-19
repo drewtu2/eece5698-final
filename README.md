@@ -44,11 +44,11 @@ one point/degree. With such a low resolution detecting a person beyond 1m become
 exceptionally difficult. 
 
 ## Setup Dependencies
-[turtlebot3][https://github.com/ROBOTIS-GIT/turtlebot3]
-[turtlebot3\_msgs][https://github.com/ROBOTIS-GIT/turtlebot3_msgs]
-[raspicam\_node][https://github.com/UbiquityRobotics/raspicam_node]
-[gscam (for use with GStreamer)][https://github.com/ros-drivers/gscam]
-OpenCV 3.3
+- [turtlebot3][https://github.com/ROBOTIS-GIT/turtlebot3]
+- [turtlebot3\_msgs][https://github.com/ROBOTIS-GIT/turtlebot3_msgs]
+- [raspicam\_node][https://github.com/UbiquityRobotics/raspicam_node]
+- [gscam (for use with GStreamer)][https://github.com/ros-drivers/gscam]
+- OpenCV 3.3
 
 ### Remote PC Side
 - Need to be running the NTP server to allow the TurtleBot to synchronize its 

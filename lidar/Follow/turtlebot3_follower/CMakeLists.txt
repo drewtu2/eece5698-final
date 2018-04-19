@@ -1,0 +1,52 @@
+################################################################################
+# CMake
+################################################################################
+cmake_minimum_required(VERSION 2.8.3)
+project(turtlebot3_follower)
+
+################################################################################
+# Packages
+################################################################################
+find_package(catkin REQUIRED COMPONENTS
+  rospy
+  std_msgs
+  sensor_msgs
+  geometry_msgs
+  nav_msgs
+)
+
+################################################################################
+# Catkin specific configuration
+################################################################################
+catkin_package(
+  CATKIN_DEPENDS rospy std_msgs sensor_msgs geometry_msgs nav_msgs
+)
+
+################################################################################
+# Build
+################################################################################
+include_directories(
+  ${catkin_INCLUDE_DIRS}
+)
+
+################################################################################
+# Install
+################################################################################
+install(PROGRAMS
+  scripts/add_comment
+  scripts/add_data
+  scripts/clf
+  scripts/clf2
+  scripts/follower.py
+  scripts/laser_subscriber.py
+  scripts/ploting.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(DIRECTORY rviz
+	DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+
+################################################################################
+# Test
+################################################################################
