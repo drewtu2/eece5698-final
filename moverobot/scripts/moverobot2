@@ -1,0 +1,22 @@
+#! /usr/bin/env python
+import rospy
+import actionlib
+from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+def reachgoal()
+    
+    client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
+    client.wait_for_server()
+    rospy.loginfo("client connected")
+    goal=MoveBaseGoal()
+    goal.target_pose.header.frame_id = "map"
+    goal.target_pose.header.stamp = rospy.Time.now()
+    goal.target_pose.pose.position.x=1 
+    client.send_goal(goal)
+    client.wait_for_result()
+    client.get_result
+if __name__ == '__main__':
+    try:
+    rospy.init_node('moverobot')
+    reachgoal();
+    except rospy.ROSInterruptException:
+        print('error to complete', file=sys.stderr)
