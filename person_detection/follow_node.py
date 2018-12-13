@@ -1,7 +1,7 @@
 
 import rospy
 import roslib
-from sensor_msgs.msg import RegionOfInterest, CameraInfo 
+from sensor_msgs.msg import RegionOfInterest, CameraInfo, Image
 from geometry_msgs.msg import Twist
 
 class person_follower():
@@ -23,7 +23,6 @@ class person_follower():
         self.rate = rospy.get_param("~rate", 10)
         r = rospy.Rate(self.rate)
 
-        # The maximum rotation speed in radians
         # The maximum rotation speed in radians per second
         self.max_rotation_speed = rospy.get_param("~max_rotation_speed", 2.0)
         
@@ -44,30 +43,33 @@ class person_follower():
         # Intialize the movement command
         self.move_cmd = Twist()
         
-        # We will get the image width and height from the camera_info topic
-        self.image_width = 320
-        self.image_height = 240
+        # We will get the image width and height from the image topic
+        self.image_width = 0
+        self.image_height = 0 
         
         # Set flag to indicate when the ROI stops updating
         self.target_visible = False
         
         # Wait for the camera_info topic to become available
         #rospy.loginfo("Waiting for camera_info topic...")
-        #rospy.wait_for_message('raspicam_node/camera_info', CameraInfo)
+        rospy.wait_for_message('/detected', Image)
 
-        # Subscribe the camera_info topic to get the image width and height
-        #rospy.Subscriber('camera_info', CameraInfo, self.get_camera_info)
+        # Subscribe the image topic to get the image width and height
+        rospy.Subscriber('/detected', Image, self.get_camera_info)
 
         # Wait until we actually have the camera data
-        #while self.image_width == 0 or self.image_height == 0:
-        #    rospy.sleep(1)
+        while self.image_width == 0 or self.image_height == 0:
+            rospy.sleep(1)
 
-        self.straight_count = 0;
+        # Initalize moving straight
+        self.straight_count = 20;
         self.straight_wait = 20;
             
         # Subscribe to the ROI topic and set the callback to update the robot's motion
         rospy.Subscriber('roi', RegionOfInterest, self.set_cmd_vel)
         
+        rospy.loginfo("Waiting for roi messages...")
+
         # Wait until we have an ROI to follow
         rospy.wait_for_message('roi', RegionOfInterest)
         
@@ -75,15 +77,25 @@ class person_follower():
         
         # Begin the tracking loop
         while not rospy.is_shutdown():
-            # If the target is not visible, stop the robot
-            if not self.target_visible:
-                if self.straight_count > self.straight_wait:
-                    self.move_cmd = Twist()
-                else:
-                    self.straight_count += 1
+            
+            # If the target is not visible and we haven't seen them in a while
+            # stop
+            if not self.target_visible and self.straight_count > self.straight_wait:
+            #if not self.target_visible:
+                print("Lost track of person...")
+                print("Havne't seen them for too long... stopping")
+                self.move_cmd = Twist()
+            # If they're not visible but we've recently seen them, keep going
+            # and increment the amount of time we've been traveling forward. 
+            elif not self.target_visible:
+                print("last saw them kinda recently, just increment")
+                self.straight_count += 1
+            # Target is visible. Reset to not visible by default. Will get updated 
+            # by the callback funciton
             else:
                 # Reset the flag to False by default
                 self.target_visible = False
+                pass
             
             # Send the Twist command to the robot
             self.cmd_vel_pub.publish(self.move_cmd)
@@ -92,20 +104,22 @@ class person_follower():
             r.sleep()
 
     def set_cmd_vel(self, msg):
+        print("roi received...")
         # If the ROI has a width or height of 0, we have lost the target
         if msg.width == 0 or msg.height == 0:
             return
-    
-        if self.straight_count < self.straight_wait:
-            print("Straight and wait")
-            self.move_cmd = Twist()
-            self.move_cmd.linear.x = 1.5;
-            self.straight_count += 1;
-            return
-
         
         # If the ROI stops updating this next statement will not happen
         self.target_visible = True
+    
+        print("roi received...")
+
+        if self.straight_count < self.straight_wait:
+            print("Straight and wait")
+            self.move_cmd = Twist()
+            self.move_cmd.linear.x = 1;
+            self.straight_count += 1;
+            return
         
         # Compute the displacement of the ROI from the center of the image
         target_offset_x = msg.x_offset + msg.width / 2 - self.image_width / 2
@@ -122,6 +136,7 @@ class person_follower():
             # Set the rotation speed proportional to the displacement of the target
             try:
                 speed = self.gain * percent_offset_x
+                
                 if speed < 0:
                     direction = 1
                     self.move_cmd.angular.z = -direction * max(self.min_rotation_speed,
@@ -130,20 +145,25 @@ class person_follower():
                     direction = -1
                     self.move_cmd.angular.z = -direction * max(self.min_rotation_speed,
                     min(self.max_rotation_speed, abs(speed)))
-            except:
+                print("Roatation!")
+            except Exception as e:
                 self.move_cmd = Twist()
+                print("***Error***")
+                print(e)
+                print("***Error***")
+
         else:
             # Otherwise stop the robot from rotating and move forward. 
             self.move_cmd = Twist()
             self.move_cmd.linear.x = 1.5;
             self.straight_count = 0;
+            print("Go Straight!")
         
     def get_camera_info(self, msg):
         self.image_width = msg.width
         self.image_height = msg.height
-        
-        self.image_width = 320
-        self.image_height = 240
+
+        #print("{}x{}".format(msg.width, msg.height))
 
     def shutdown(self):
         rospy.loginfo("Stopping the robot...")

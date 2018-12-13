@@ -10,21 +10,24 @@ import cv2
 import imutils
 import np
 import argparse
+import logging
 
 from imutils import paths
 from std_msgs.msg import String
 from sensor_msgs.msg import Image, RegionOfInterest
 from cv_bridge import CvBridge, CvBridgeError
+from person_detector import person_detector
 
-class person_detector:
+class dnn_detector(person_detector):
+    # Code Modified from
     # https://www.pyimagesearch.com/2017/09/18/real-time-object-detection-with-deep-learning-and-opencv/
     def __init__(self):
+        """
+        """
 
-        self.bridge = CvBridge()
-        #self.image_sub = rospy.Subscriber("raspicam_node/image/image_raw", Image,self.callback)
-        self.image_sub = rospy.Subscriber("raspicam2/image_raw", Image, self.detect)
-        self.image_pub = rospy.Publisher("detected", Image)
-        self.image_pub_roi = rospy.Publisher("roi", RegionOfInterest)
+        logging.debug("Attempting to create the DNN Detector")
+
+        person_detector.__init__(self)
 
         # construct the argument parse and parse the arguments
         ap = argparse.ArgumentParser()
@@ -34,7 +37,7 @@ class person_detector:
         ap.add_argument("-m", "--model", 
                 default="real-time-object-detection/MobileNetSSD_deploy.caffemodel",
                     help="path to Caffe pre-trained model")
-        ap.add_argument("-c", "--confidence", type=float, default=0.2,
+        ap.add_argument("-c", "--confidence", type=float, default=0.4,
                     help="minimum probability to filter weak detections")
         self.args = vars(ap.parse_args())
 
@@ -50,15 +53,25 @@ class person_detector:
         print("[INFO] loading model...")
         self.net = cv2.dnn.readNetFromCaffe(self.args["prototxt"], self.args["model"])
         
+        logging.debug("DNN Detector Created...")
 
     def detect(self, data):
+        """
+        Detect and classify images inside the given image.
+
+        :args data: a ROS image 
+        """
+        logging.debug("Attempting to classify items in image")
+        
         try:
             frame = self.bridge.imgmsg_to_cv2(data, "bgr8")
         except CvBridgeError as e:
-            print(e)
+            logging.warning(e)
         
         frame = imutils.resize(frame, width=400)
         cv2.imshow("Frame", frame)
+
+        logging.debug("Image converted to opencv and resized")
 
         # grab the frame dimensions and convert it to a blob
         (h, w) = frame.shape[:2]
@@ -68,6 +81,8 @@ class person_detector:
         # predictions
         self.net.setInput(blob)
         detections = self.net.forward()
+
+        logging.debug("Detections and predictions created...")
 
         rois = []
         
@@ -88,8 +103,7 @@ class person_detector:
                 (startX, startY, endX, endY) = box.astype("int")
                 
                 # draw the prediction on the frame
-                label = "{}: {:.2f}%".format(self.CLASSES[idx],
-                confidence * 100)
+                label = "{}: {:.2f}%".format(self.CLASSES[idx], confidence * 100)
                 cv2.rectangle(frame, (startX, startY), (endX, endY),
                 self.COLORS[idx], 2)
                 y = startY - 15 if startY - 15 > 15 else startY + 15
@@ -97,9 +111,12 @@ class person_detector:
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.COLORS[idx], 2)
 
                 if self.CLASSES[idx] is "person":
+                    print("found person")
                     rois.append((startX, startY, endX, endY))
         
-            self.pub_roi(rois)
+        logging.debug("attempting to publish... call from dnn_detector")
+        super(dnn_detector, self).pub_roi(rois)
+        logging.debug("post publish attempt")
 
         # show the output frame
         cv2.imshow("Frame", frame)
@@ -113,28 +130,8 @@ class person_detector:
         #    except CvBridgeError as e:
         #        print(e)
 
-
-    def pub_roi(self, l_roi):
-       """
-       Publish the roi
-       """
-       # Short circuit of no rois
-       if len(l_roi) == 0:
-           return
-    
-       largest = max(l_roi, key=lambda p : p[2] * p[3]);
-       print("largest: " + str(largest))
-       roi = RegionOfInterest()
-       roi.x_offset = largest[0]
-       roi.y_offset = largest[1]
-       roi.width = largest[2]
-       roi.height = largest[3]
-       print(roi)
-       self.image_pub_roi.publish(roi)
-       roi = RegionOfInterest()
-
 def main(args):
-    ic = person_detector()
+    ic = dnn_detector()
     rospy.init_node('image_converter', anonymous=True)
     print("running")
     try:
@@ -146,4 +143,6 @@ def main(args):
         cv2.destroyAllWindows()
 
 if __name__ == '__main__':
+    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+    global logger
     main(sys.argv)
